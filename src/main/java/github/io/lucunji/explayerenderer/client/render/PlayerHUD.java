@@ -4,6 +4,7 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import github.io.lucunji.explayerenderer.config.Configs;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawableHelper;
+import net.minecraft.client.render.LightmapTextureManager;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.entity.EntityRenderDispatcher;
 import net.minecraft.client.util.math.MatrixStack;
@@ -11,8 +12,10 @@ import net.minecraft.client.util.math.Vector3f;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Quaternion;
+import net.minecraft.world.LightType;
 
 import java.lang.reflect.Field;
 import java.util.Arrays;
@@ -113,8 +116,7 @@ public class PlayerHUD extends DrawableHelper {
             entityRenderDispatcher.setRotation(quaternion2);
             entityRenderDispatcher.setRenderShadows(false);
             VertexConsumerProvider.Immediate immediate = MinecraftClient.getInstance().getBufferBuilders().getEntityVertexConsumers();
-            System.err.println(ticks + " " + tickDelta);
-            entityRenderDispatcher.render(player, 0.0D, 0.0D, 0.0D, 0.0F, tickDelta, matrixStack, immediate, entityRenderDispatcher.getLight(player, tickDelta));
+            entityRenderDispatcher.render(player, 0.0D, 0.0D, 0.0D, 0.0F, tickDelta, matrixStack, immediate, getLight(player, tickDelta));
             immediate.draw();
             entityRenderDispatcher.setRenderShadows(true);
             entityRenderDispatcher.setRenderHitboxes(renderHitbox);
@@ -137,5 +139,13 @@ public class PlayerHUD extends DrawableHelper {
             }
         }
         RenderSystem.popMatrix();
+    }
+
+    private static int getLight(PlayerEntity player, float tickDelta)
+    {
+        BlockPos pos = new BlockPos(player.getCameraPosVec(tickDelta));
+        int blockLight = player.world.getLightLevel(LightType.BLOCK, pos);
+        int skyLight = player.world.getLightLevel(LightType.SKY, pos);
+        return LightmapTextureManager.pack(Math.max(skyLight, blockLight), skyLight);
     }
 }
