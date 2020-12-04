@@ -27,7 +27,7 @@ public class PlayerHUD extends DrawableHelper {
     }
 
     // TODO: lightDegree
-    public void render(int ticks) {
+    public void render(int ticks, float tickDelta) {
         PlayerEntity player;
         if (Configs.SPECTATOR_AUTO_SWITCH.getBooleanValue()) {
             Entity cameraEntity = MinecraftClient.getInstance().getCameraEntity();
@@ -66,10 +66,13 @@ public class PlayerHUD extends DrawableHelper {
             matrixStack.multiply(Vector3f.POSITIVE_Y.getDegreesQuaternion((float)Configs.ROTATION_Y.getDoubleValue()));
             matrixStack.multiply(Vector3f.POSITIVE_Z.getDegreesQuaternion((float)Configs.ROTATION_Z.getDoubleValue()));
 
+            // data storing
             float bodyYaw = player.bodyYaw;
             float yaw = player.yaw;
             float pitch = player.pitch;
+            float prevBodyYaw = player.prevBodyYaw;
             float prevHeadYaw = player.prevHeadYaw;
+            float prevPitch = player.prevPitch;
             float headYaw = player.headYaw;
             float handSwingProgress = player.handSwingProgress;
             int hurtTime = player.hurtTime;
@@ -80,12 +83,13 @@ public class PlayerHUD extends DrawableHelper {
             } catch (IllegalAccessException e) {
                 e.printStackTrace();
             }
+
             EntityRenderDispatcher entityRenderDispatcher = MinecraftClient.getInstance().getEntityRenderManager();
             boolean renderHitbox = entityRenderDispatcher.shouldRenderHitboxes();
 
-            player.bodyYaw = 180 - (float) MathHelper.clamp(player.bodyYaw, Configs.BODY_YAW_MIN.getDoubleValue(), Configs.BODY_YAW_MAX.getDoubleValue());
-            player.headYaw = 180 - (float) MathHelper.clamp(player.headYaw, Configs.HEAD_YAW_MIN.getDoubleValue(), Configs.HEAD_YAW_MAX.getDoubleValue());
-            player.pitch = (float) (MathHelper.clamp(player.pitch, Configs.PITCH_MIN.getDoubleValue(), Configs.PITCH_MAX.getDoubleValue()) + Configs.PITCH_OFFSET.getDoubleValue());
+            player.prevBodyYaw = player.bodyYaw = 180 - (float) MathHelper.clamp(player.bodyYaw, Configs.BODY_YAW_MIN.getDoubleValue(), Configs.BODY_YAW_MAX.getDoubleValue());
+            player.prevHeadYaw = player.headYaw = 180 - (float) MathHelper.clamp(player.headYaw, Configs.HEAD_YAW_MIN.getDoubleValue(), Configs.HEAD_YAW_MAX.getDoubleValue());
+            player.prevPitch = player.pitch = (float) (MathHelper.clamp(player.pitch, Configs.PITCH_MIN.getDoubleValue(), Configs.PITCH_MAX.getDoubleValue()) + Configs.PITCH_OFFSET.getDoubleValue());
 
             if (Configs.SWING_HANDS.getBooleanValue()) {
                 player.handSwingProgress = player.getHandSwingProgress(client.getTickDelta());
@@ -109,15 +113,19 @@ public class PlayerHUD extends DrawableHelper {
             entityRenderDispatcher.setRotation(quaternion2);
             entityRenderDispatcher.setRenderShadows(false);
             VertexConsumerProvider.Immediate immediate = MinecraftClient.getInstance().getBufferBuilders().getEntityVertexConsumers();
-            entityRenderDispatcher.render(player, 0.0D, 0.0D, 0.0D, 0.0F, 1.0F, matrixStack, immediate, 15728880);
+            System.err.println(ticks + " " + tickDelta);
+            entityRenderDispatcher.render(player, 0.0D, 0.0D, 0.0D, 0.0F, tickDelta, matrixStack, immediate, entityRenderDispatcher.getLight(player, tickDelta));
             immediate.draw();
             entityRenderDispatcher.setRenderShadows(true);
             entityRenderDispatcher.setRenderHitboxes(renderHitbox);
 
+            // data restoring
             player.bodyYaw = bodyYaw;
             player.yaw = yaw;
             player.pitch = pitch;
+            player.prevBodyYaw = prevBodyYaw;
             player.prevHeadYaw = prevHeadYaw;
+            player.prevPitch = prevPitch;
             player.headYaw = headYaw;
             player.handSwingProgress = handSwingProgress;
             player.hurtTime = hurtTime;
