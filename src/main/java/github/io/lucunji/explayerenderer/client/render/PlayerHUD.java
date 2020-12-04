@@ -15,7 +15,6 @@ import net.minecraft.entity.LivingEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Quaternion;
-import net.minecraft.world.LightType;
 
 public class PlayerHUD extends DrawableHelper {
     private static final MinecraftClient client = MinecraftClient.getInstance();
@@ -123,9 +122,11 @@ public class PlayerHUD extends DrawableHelper {
 
     private static int getLight(LivingEntity entity, float tickDelta)
     {
-        BlockPos pos = new BlockPos(entity.getCameraPosVec(tickDelta));
-        int blockLight = entity.world.getLightLevel(LightType.BLOCK, pos);
-        int skyLight = entity.world.getLightLevel(LightType.SKY, pos);
-        return LightmapTextureManager.pack(Math.max(skyLight, blockLight), skyLight);
+        int mixedLight = 15;
+        if (Configs.USE_WORLD_LIGHT.getBooleanValue())
+        {
+            mixedLight = entity.world.getLightLevel(new BlockPos(entity.getCameraPosVec(tickDelta)));
+        }
+        return LightmapTextureManager.pack(mixedLight, mixedLight);
     }
 }
